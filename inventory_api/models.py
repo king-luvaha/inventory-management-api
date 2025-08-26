@@ -30,6 +30,7 @@ class InventoryItem(models.Model):
     
     class Meta:
         ordering = ['-last_updated']
+        unique_together = ('name', 'category')
 
 class InventoryChange(models.Model):
     ACTION_CHOICES = [
