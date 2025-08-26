@@ -30,3 +30,27 @@ class InventoryItem(models.Model):
     
     class Meta:
         ordering = ['-last updated']
+
+class InventoryChange(models.Model):
+    ACTION_CHOICES = [
+        ('ADD', 'Add Stock'),
+        ('REMOVE', 'Remove Stock'),
+        ('UPDATE', 'Update Details'),
+        ('CREATE', 'Create Item'),
+        ('DELETE', 'Delete Item'),
+    ]
+
+    item = models.ForeignKey(InventoryItem, on_delete=models.CASCADE, related_name='changes')
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    action = models.CharField(max_length=10, choices=ACTION_CHOICES)
+    quantity_change = models.IntegerField(default=0)
+    previous_quantity = models.PositiveIntegerField(null=True, blank=True)
+    new_quantity = models.PositiveIntegerField(null=True, blank=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
+    notes = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.get_action_display()} - {self.item.name} by {self.user.username if self.user else 'System'}"
+    
+    class Meta:
+        ordering = ['-timestamp']
