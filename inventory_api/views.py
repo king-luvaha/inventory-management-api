@@ -1,6 +1,6 @@
 from rest_framework import viewsets, status, filters
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.decorators import action
 from django_filters.rest_framework import DjangoFilterBackend
 from .models import InventoryItem, Category, InventoryChange, User
@@ -18,7 +18,33 @@ User = get_user_model()
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [IsAuthenticated]
+    
+    def get_permissions(self):
+        """
+        Instantiates and returns the list of permissions required for this view.
+        """
+        if self.action == 'create': # Registration
+            permission_classes = [AllowAny]
+        else:
+            permission_classes = [IsAuthenticated]
+        return [permission() for permission in permission_classes]
+    
+    def get_queryset(self):
+        """
+        Users can only see their own profile (except during registration)
+        """
+        if self.request.user.is_authenticated:
+            if self.request.user.is_superuser:
+                return User.objects.all()       # Admin can see all users
+            return User.objects.filter(id=self.request.user.id)
+        return User.objects.none()
+    
+    def perform_create(self, serializer):
+        """
+        Create user and set user_id in environment for testing
+        """
+        user = serializer.save()
+        return user
 
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
