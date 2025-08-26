@@ -52,3 +52,11 @@ class InventoryItemSerializer(serializers.ModelSerializer):
         if value <= 0:
             raise serializers.ValidationError("Price must be positive.")
         return value
+    
+class InventoryChangeSerializer(serializers.ModelSerializer):
+    item = serializers.StringRelatedField()
+    user = serializers.StringRelatedField()
+
+    class Meta:
+        model = InventoryChange
+        fields = '__all__'
