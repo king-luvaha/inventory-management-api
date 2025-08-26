@@ -17,3 +17,8 @@ class UserSerializer(serializers.ModelSerializer):
             password=validated_data['password'],
         )
         return user
+    
+class CategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = '__all__'
