@@ -23,3 +23,18 @@ class CategoryAdmin(admin.ModelAdmin):
     list_display = ('name', 'description')
     search_fields = ('name', 'description')
     list_per_page = 20
+
+# Inventory Item Admin
+@admin.register(InventoryItem)
+class InventoryItemAdmin(admin.ModelAdmin):
+    list_display = ('name', 'quantity', 'price', 'category', 'created_by', 'date_added', 'last_updated')
+    list_filter = ('category', 'created_by', 'date_added')
+    search_fields = ('name', 'description')
+    readonly_fields = ('date_added', 'last_updated')
+    list_per_page = 20
+
+    fieldsets = (
+        (None, {'fields': ('name', 'description', 'category', 'created_by')}),
+        ('Inventory Details', {'fields': ('quantity', 'price')}),
+        ('Timestamps', {'fields': ('date_added', 'last_updated'), 'classes': ('collapse',)}),
+    )
