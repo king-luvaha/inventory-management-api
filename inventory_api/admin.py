@@ -44,7 +44,7 @@ class InventoryItemAdmin(admin.ModelAdmin):
 class InventoryChangeAdmin(admin.ModelAdmin):
     list_display = ('item', 'user', 'action', 'quantity_change', 'previous_quantity', 'new_quantity', 'timestamp')
     list_filter = ('action', 'timestamp', 'user')
-    readonly_fields = ('timestamp')
+    readonly_fields = ('timestamp',)
     search_fields = ('item__name', 'user__username', 'notes')
     list_per_page = 20
 
