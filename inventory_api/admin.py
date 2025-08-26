@@ -38,3 +38,16 @@ class InventoryItemAdmin(admin.ModelAdmin):
         ('Inventory Details', {'fields': ('quantity', 'price')}),
         ('Timestamps', {'fields': ('date_added', 'last_updated'), 'classes': ('collapse',)}),
     )
+
+# Inventory Change Admin
+@admin.register(InventoryChange)
+class InventoryChangeAdmin(admin.ModelAdmin):
+    list_display = ('item', 'user', 'action', 'quantity_change', 'previous_quantity', 'new_quantity', 'timestamp')
+    list_filter = ('action', 'timestamp', 'user')
+    readonly_fields = ('timestamp')
+    search_fields = ('item__name', 'user__username', 'notes')
+    list_per_page = 20
+
+    def has_add_permission(self, request):
+        # Prevent adding changes manually through admin
+        return False
