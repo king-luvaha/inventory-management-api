@@ -29,7 +29,7 @@ class InventoryItem(models.Model):
         return f"{self.name} ({self.quantity})"
     
     class Meta:
-        ordering = ['-last updated']
+        ordering = ['-last_updated']
 
 class InventoryChange(models.Model):
     ACTION_CHOICES = [
