@@ -10,7 +10,7 @@ router.register(r'inventory', InventoryItemViewSet, basename='inventory')
 router.register(r'changes', InventoryChangeViewSet, basename='changes')
 
 urlpatterns = [
-    path('', include(router.urls))
+    path('', include(router.urls)),
     path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 ]
