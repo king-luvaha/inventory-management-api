@@ -165,4 +165,15 @@ class InventoryItemViewSet(viewsets.ModelViewSet):
         changes = item.changes.all().order_by('-timestamp')
         serializer = InventoryChangeSerializer(changes, many=True)
         return Response(serializer.data)
+    
+class InventoryChangeViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = InventoryChangeSerializer
+    permission_classes = [IsAuthenticated]
+    filter_backends = [filters.OrderingFilter]
+    ordering_fields = ['timestamp', 'action']
+    ordering = ['-timestamp']
+
+    def get_queryset(self):
+        user = self.request.user
+        return InventoryChange.objects.filter(user=user)
         
