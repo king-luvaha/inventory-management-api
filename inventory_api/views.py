@@ -26,3 +26,143 @@ class CategoryViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     filter_backends = [filters.SearchFilter]
     search_fields = ['name']
+
+class InventoryItemViewSet(viewsets.ModelViewSet):
+    serializer_class = InventoryItemSerializer
+    permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ['category', 'quantity']
+    search_fields = ['name', 'description']
+    ordering_fields = ['name', 'quantity', 'price', 'last_updated']
+
+    def get_queryset(self):
+        user = self.request.user
+        queryset = InventoryItem.objects.filter(created_by=user)
+
+        # Filter for low stock items
+        low_stock = self.request.query_params.get('low_stock', None)
+        if low_stock is not None:
+            try:
+                threshold = int(low_stock)
+                queryset = queryset.filter(quantity__lt=threshold)
+            except ValueError:
+                pass
+
+        # Filter by price range
+        min_price = self.request.query_params.get('min_price', None)
+        max_price = self.request.query_params.get('max_price', None)
+
+        if min_price is not None:
+            try:
+                queryset = queryset.filter(price__gte=float(min_price))
+            except ValueError:
+                pass
+
+        if max_price is not None:
+            try:
+                queryset = queryset.filter(price__lte=float(max_price))
+            except ValueError:
+                pass
+
+        return queryset
+
+    def perform_create(self, serializer):
+        item = serializer.save(created_by=self.request.user)
+        InventoryChange.objects.create(
+            item=item,
+            user=self.request.user,
+            action='CREATE',
+            new_quantity=item.quantity,
+            notes='Item created'
+        )
+
+    def perform_update(self, serializer):
+        old_item = self.get_object()
+        old_quantity = old_item.quantity
+
+        item = serializer.save()
+        new_quantity = item.quantity
+
+        if old_quantity != new_quantity:
+            quantity_change = new_quantity - old_quantity
+            action_type = 'ADD' if quantity_change > 0 else 'REMOVE'
+
+            InventoryChange.objects.create(
+                item=item,
+                user=self.request.user,
+                action=action_type,
+                quantity_change=quantity_change,
+                previous_quantity=old_quantity,
+                new_quantity=new_quantity,
+                notes='Quantity updated'
+            )
+        else:
+            InventoryChange.objects.create(
+                item=item,
+                user=self.request.user,
+                action='UPDATE',
+                notes='Details updated'
+            )
+
+    def perform_destroy(self, instance):
+        InventoryChange.objects.create(
+            item=instance,
+            user=self.request.user,
+            action='DELETE',
+            previous_quantity=instance.quantity,
+            notes='Item deleted'
+        )
+        instance.delete()
+
+    @action(detail=True, methods=['post'])
+    def adjust_stock(self, request, pk=None):
+        item = self.get_object()
+        adjustment = request.data.get('adjustment', None)
+        notes = request.data.get('notes', '')
+
+        if adjustment is None:
+            return Response(
+                {'error': 'Adjustment value is required.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            adjustment = int(adjustment)
+        except ValueError:
+            return Response(
+                {'error': 'Adjustment must be an integer.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        new_quantity = item.quantity + adjustment
+        if new_quantity < 0:
+            return Response(
+                {'error': 'Resulting quantity cannot be negative.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        old_quantity = item.quantity
+        item.quantity = new_quantity
+        item.save()
+
+        action_type = 'ADD' if adjustment > 0 else 'REMOVE'
+        InventoryChange.objects.create(
+            item=item,
+            user=request.user,
+            action=action_type,
+            quantity_change=adjustment,
+            previous_quantity=old_quantity,
+            new_quantity=new_quantity,
+            notes=notes
+        )
+
+        serializer = self.get_serializer(item)
+        return Response(serializer.data)
+    
+    @action(detail=True, methods=['get'])
+    def history(self, request, pk=None):
+        item = self.get_object()
+        changes = item.changes.all().order_by('-timestamp')
+        serializer = InventoryChangeSerializer(changes, many=True)
+        return Response(serializer.data)
+        
