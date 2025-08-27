@@ -56,6 +56,9 @@ class InventoryChange(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
     notes = models.TextField(blank=True, null=True)
 
+    class Meta:
+        verbose_name_plural = "Inventory Changes"
+
     def __str__(self):
         return f"{self.get_action_display()} - {self.item.name} by {self.user.username if self.user else 'System'}"
     
