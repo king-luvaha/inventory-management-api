@@ -90,11 +90,7 @@ class InventoryItemViewSet(viewsets.ModelViewSet):
             except ValueError:
                 pass
 
-        return (
-            super()
-            .get_queryset()
-            .select_related("category", "created_by")  # avoid N+1 queries
-        )
+        return queryset
 
     def perform_create(self, serializer):
         item = serializer.save(created_by=self.request.user)
