@@ -28,6 +28,9 @@ class InventoryItem(models.Model):
     date_added = models.DateTimeField(auto_now_add=True)
     last_updated = models.DateTimeField(auto_now=True)
 
+    class Meta:
+        verbose_name_plural = "Inventory Items"
+
     def __str__(self):
         return f"{self.name} ({self.quantity})"
     
